@@ -1,3 +1,5 @@
+import os
+
 from .base import (
     Dependency,
     ReleaseDownload,
@@ -18,7 +20,8 @@ class Aria2(Dependency):
 
         def _post_prepare_script(self, context):
             context.try_skip(self.extract_path)
-            command = "autoreconf -i"
+            autoreconf = os.environ.get('AUTORECONF_COMMAND', 'autoreconf')
+            command = "{} -i".format(autoreconf)
             run_command(command, self.extract_path, context)
 
     class Builder(MakeBuilder):

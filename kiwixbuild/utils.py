@@ -233,6 +233,9 @@ def run_command(command, cwd, context, buildEnv=None, env=None, input=None, cros
         if cross_env_only:
             cross_compile_compiler = False
         env = buildEnv._set_env(env, cross_compile_env, cross_compile_compiler, cross_compile_path)
+    if neutralEnv('distname') == 'Windows' and 'SHELL_COMMAND' in os.environ:
+        command = command.replace('/', r'\\\\')
+        command = [os.environ['SHELL_COMMAND'],'-c', command]
     log = None
     try:
         if not option('verbose'):
@@ -243,10 +246,13 @@ def run_command(command, cwd, context, buildEnv=None, env=None, input=None, cros
         for k, v in env.items():
             print("  {} : {!r}".format(k, v), file=log)
 
-        kwargs = dict()
+        kwargs = {'shell': True}
         if input:
             kwargs['stdin'] = subprocess.PIPE
-        process = subprocess.Popen(command, shell=True, cwd=cwd, env=env, stdout=log or sys.stdout, stderr=subprocess.STDOUT, **kwargs)
+        if neutralEnv('distname') == 'Windows' and 'SHELL_COMMAND' in os.environ:
+            #kwargs['executable'] = os.environ['SHELL_COMMAND']
+            kwargs['shell'] = False
+        process = subprocess.Popen(command, cwd=cwd, env=env, stdout=log or sys.stdout, stderr=subprocess.STDOUT, **kwargs)
         if input:
             process.communicate(input.encode())
         retcode = process.wait()
